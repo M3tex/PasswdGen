@@ -1,6 +1,18 @@
-/*
-Ce programme permet de générer des mots de passe
-*/
+/* Ce programme permet de générer des mots de passe en utilisant
+des fonctions compatibles avec un usage cryptographique.
+
+TODO: Ajouter des caractères obligatoires:
+- un caractère spécial
+- un caractère majuscule
+- un caractère minuscule
+- un chiffre
+
+TODO: Ajouter une interface + accueillante
+TODO: Possibilité de choisir des paternes de mots de passe
+TODO: Possibilité de choisir des caractères possibles
+TODO: Possiblité de copier le mot de passe dans le presse-papier */
+
+
 
 /*** Include ***/
 #include <stdio.h>
@@ -20,6 +32,9 @@ int add_int(int x, int y, int *result);
 int mult_int(int x, int y, int *result);
 void clear_input();
 void clear_screen();
+void generate_passwd(int nb, int len, char *passwd[]);
+
+
 
 
 
@@ -33,7 +48,6 @@ char *alphabet_numeric = "0123456789";
 char *alphabet_special = "!#$%&()*+-/<>=?@^|~";
 
 
-
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
     #define CLEAR "cls"
 #else
@@ -43,11 +57,15 @@ char *alphabet_special = "!#$%&()*+-/<>=?@^|~";
 
 
 
+
 /*** Visuel ***/
 void clear_screen()
 {
     system(CLEAR);
 }
+
+
+
 
 
 /*** Fonctions Utilitaires ***/
@@ -85,6 +103,7 @@ int str2int(char *input, int *result)
     }
 }
 
+
 void clear_input()
 {
     // On efface les caractères entrés superflus
@@ -115,6 +134,7 @@ int mult_int(int x, int y, int *result)
         return 0;
     }
 }
+
 
 /**
  * @brief Permet de demander à l'utilisateur un entier positif.
@@ -182,6 +202,9 @@ void generate_passwd(int nb, int len, char *passwd[])
 }
 
 
+
+
+
 /*** Main ***/
 
 int main(void)
@@ -232,6 +255,3 @@ int main(void)
         }
     }
 }
-
-
-
