@@ -59,6 +59,11 @@ char *alphabet_special = "!#$%&()*+-/<>=?@^|~";
 
 
 /*** Visuel ***/
+
+/**
+ * @brief Permet d'effacer le terminal
+ * 
+ */
 void clear_screen()
 {
     system(CLEAR);
@@ -70,6 +75,13 @@ void clear_screen()
 
 /*** Fonctions Utilitaires ***/
 
+/**
+ * @brief Convertit un string en entier si possible.
+ * 
+ * @param input Le string à convertir
+ * @param result Le pointeur vers la variable où l'on souhaite stocker l'entier
+ * @return 0 si le string a été converti avec succès, -1 sinon
+ */
 int str2int(char *input, int *result)
 {
     *result = 0;
@@ -104,6 +116,11 @@ int str2int(char *input, int *result)
 }
 
 
+/**
+ * @brief Permet d'effacer les caractères saisis par l'utilisateur
+ * et non lus par fgets().
+ * 
+ */
 void clear_input()
 {
     // On efface les caractères entrés superflus
@@ -111,7 +128,17 @@ void clear_input()
     while ((c = getchar()) != '\n' && c != EOF);
 }
 
-
+/**
+ * @brief Permet de vérifier que le résultat de x + y ne produit
+ * pas d'int overflow. Dans le cas où l'addition est possible
+ * on la réalise.
+ * 
+ * @param x 
+ * @param y 
+ * @param result Le pointeur vers la variable où l'on souhaite stocker
+ * le résultat de x + y
+ * @return 0 si l'addition est possible, -1 sinon
+ */
 int add_int(int x, int y, int *result)
 {
     // On vérifie qu'il n'y a pas d'int overflow
@@ -124,10 +151,21 @@ int add_int(int x, int y, int *result)
 }
 
 
+/**
+ * @brief Permet de vérifier que le résultat de x * y ne produit
+ * pas d'int overflow. Dans le cas où la multiplication est possible
+ * on la réalise.
+ * 
+ * @param x 
+ * @param y 
+ * @param result Le pointeur vers la variable où l'on souhaite stocker
+ * le résultat de x * y
+ * @return 0 si la multiplication est possible, -1 sinon
+ */
 int mult_int(int x, int y, int *result)
 {
     // On vérifie qu'il n'y a pas d'int overflow
-    if (x != 0 && x > INT_MAX / y)
+    if (y != 0 && x > INT_MAX / y)
         return -1;
     else {
         *result = x * y;
@@ -146,24 +184,25 @@ int mult_int(int x, int y, int *result)
  */
 int get_int(char *msg)
 {
-    // Le buffer est de 10 car l'entier max en C est inférieur à 10 ^ 10
-    char input[10];
+    // Le buffer est de 10 car l'entier max en C est inférieur à 10 ^ 10 (et + 1 pour le '\0')
+    int buff = 10 + 1;
+    char input[buff];
     int result;
     
     while (1)
     {
         printf("%s", msg);
-        fgets(input, 11, stdin);
+        fgets(input, buff, stdin);
 
         // On vérifie que l'entrée ne dépassera pas la longueur max
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < buff; i++)
         {
             if (input[i] == '\n')
             {
                 // Dans ce cas l'entrée est inférieure à la longueur max
                 break;
             } 
-            else if (i == 9)
+            else if (i == buff - 1)
             {
                 /* Si on arrive ici c'est qu'on a atteint la longueur max
                 On supprime alors les caractères non lus */
@@ -179,6 +218,13 @@ int get_int(char *msg)
 }
 
 
+/**
+ * @brief Permet de générer nb mots de passes de longueur len.
+ * 
+ * @param nb Le nombre de mots de passes à générer.
+ * @param len La longueur des mots de passes
+ * @param passwd Le pointeur vers le tableau où on stockera les mots de passes
+ */
 void generate_passwd(int nb, int len, char *passwd[])
 {
     // On initialise notre tableau d'alphabets
