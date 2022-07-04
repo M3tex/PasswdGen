@@ -1,4 +1,4 @@
-/* Ce programme permet de générer des mots de passe en utilisant
+/* Ce programme permet de générer des mots de passe, en utilisant
 des fonctions compatibles avec un usage cryptographique.
 
 TODO: Ajouter des caractères obligatoires:
@@ -9,7 +9,7 @@ TODO: Ajouter des caractères obligatoires:
 
 TODO: Ajouter une interface + accueillante
 TODO: Possibilité de choisir des paternes de mots de passe
-TODO: Possibilité de choisir des caractères possibles
+TODO: Possibilité de choisir les caractères spéciaux
 TODO: Possiblité de copier le mot de passe dans le presse-papier */
 
 
@@ -123,7 +123,7 @@ int str2int(char *input, int *result)
  */
 void clear_input()
 {
-    // On efface les caractères entrés superflus
+    // On efface les caractères superflus saisis 
     int c;
     while ((c = getchar()) != '\n' && c != EOF);
 }
@@ -282,13 +282,11 @@ int main(void)
     for (int i = 0; i < nb_passwd; i++)
     {
         printf("%s\n", passwords[i]);
-    }
 
-    // On libère la mémoire allouée pour les mots de passes
-    for (int i = 0; i < nb_passwd; i++)
-    {
+        // On libère la mémoire allouée pour les mots de passes
         free(passwords[i]);
     }
+
 
     printf("\n%d mots de passes de %d caractères ont été générés en %fs\n", nb_passwd, passwd_len, tps);
     printf("Appuyez sur entrée pour quitter...  ");
