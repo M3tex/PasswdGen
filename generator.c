@@ -222,7 +222,7 @@ int main(void)
     }
 
     printf("\n%d mots de passes de %d caractères ont été générés en %fs\n", nb_passwd, passwd_len, tps);
-    printf("Appuyez sur entrée pour quitter... ");
+    printf("Appuyez sur entrée pour quitter...  ");
     while(1)
     {
         if (getchar())
