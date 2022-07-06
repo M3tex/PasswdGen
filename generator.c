@@ -1,11 +1,6 @@
 /* Ce programme permet de générer des mots de passe, en utilisant
 des fonctions compatibles avec un usage cryptographique.
 
-TODO: Ajouter des caractères obligatoires:
-- un caractère spécial
-- un caractère majuscule
-- un caractère minuscule
-- un chiffre
 
 TODO: Ajouter une interface + accueillante
 TODO: Possibilité de choisir des paternes de mots de passe
@@ -26,6 +21,7 @@ TODO: Possiblité de copier le mot de passe dans le presse-papier */
 
 
 /*** Prototypes ***/
+
 int str2int(char *input, int *result);
 int get_int(char *msg);
 int add_int(int x, int y, int *result);
@@ -33,6 +29,7 @@ int mult_int(int x, int y, int *result);
 void clear_input();
 void clear_screen();
 void generate_passwd(int nb, int len, char *passwd[]);
+void csprng_shuffle(char *str);
 
 
 
@@ -223,7 +220,7 @@ int get_int(char *msg)
  * 
  * @param nb Le nombre de mots de passes à générer.
  * @param len La longueur des mots de passes
- * @param passwd Le pointeur vers le tableau où on stockera les mots de passes
+ * @param passwd Le tableau où on stockera les mots de passes
  */
 void generate_passwd(int nb, int len, char *passwd[])
 {
@@ -235,7 +232,15 @@ void generate_passwd(int nb, int len, char *passwd[])
         // Pour chaque mot de passe, on alloue de la mémoire
         passwd[i] = (char *) malloc(sizeof(char) * (len + 1));
         passwd[i][len] = '\0';
-        for (int j = 0; j < len; j++)
+
+        // On force la présence d'au moins chaque type de caractère (on mélangera après)
+        for (int n = 0; n < 4; n++)
+        {
+            passwd[i][n] = alphabets[n][randombytes_uniform(strlen(alphabets[n]))];
+        }
+
+        // On remplit le reste en tirant des caractères aléatoires
+        for (int j = 4; j < len; j++)
         {
             // On choisit un type de caractère aléatoire
             int rand_alph = randombytes_uniform(4);
@@ -244,6 +249,26 @@ void generate_passwd(int nb, int len, char *passwd[])
             int rand_char = randombytes_uniform(strlen(alphabets[rand_alph]));
             passwd[i][j] = alphabets[rand_alph][rand_char];
         }
+
+        // On mélange les caractères
+        csprng_shuffle(passwd[i]);
+    }
+}
+
+
+/**
+ * @brief Permet de mélanger un string en utilisant l'algorithme de Fisher-Yates.
+ * 
+ * @param str Le string à mélanger.
+ */
+void csprng_shuffle(char *str)
+{
+    for (int i = strlen(str) - 1; i > 0; i--)
+    {
+        int j = randombytes_uniform(i + 1);
+        char tmp = str[i];
+        str[i] = str[j];
+        str[j] = tmp;
     }
 }
 
@@ -267,6 +292,12 @@ int main(void)
 
     // On demande à l'utilisateur la longueur de chaque mot de passe
     int passwd_len = get_int("Combien de caractères voulez-vous avoir pour chaque mot de passe ?\n");
+    while (passwd_len < 4)
+    {
+        printf("Le mot de passe doit contenir au moins 4 caractères pour satisfaire les conditions !\n");
+        passwd_len = get_int("Combien de caractères voulez-vous avoir pour chaque mot de passe ?\n");
+    }
+    
     clear_screen();
 
     clock_t exec_time = clock();
