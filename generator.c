@@ -1,11 +1,12 @@
-/* Ce programme permet de générer des mots de passe, en utilisant
+/* 
+Ce programme permet de générer des mots de passe, en utilisant
 des fonctions compatibles avec un usage cryptographique.
 
-
-TODO: Ajouter une interface + accueillante
+Ajouter une interface + accueillante
 TODO: Possibilité de choisir des paternes de mots de passe
 TODO: Possibilité de choisir les caractères spéciaux
-TODO: Possiblité de copier le mot de passe dans le presse-papier */
+TODO: Possiblité de copier le mot de passe dans le presse-papier 
+*/
 
 
 
@@ -29,20 +30,22 @@ int mult_int(int x, int y, int *result);
 void clear_input();
 void clear_screen();
 void generate_passwd(int nb, int len, char *passwd[]);
+void generate_passphrase(int passwd_nb, int words_nb);
 void csprng_shuffle(char *str);
+void print_title();
+
 
 
 
 
 
 /*** Variables Globales ***/
-int MAX_PASSWD = 6;     // Le nombre max de mdp à générer est 10 ^ MAX_PASSWD
-int MAX_PASSWD_LEN = 10; // La longueur max d'un mdp est 10 ^ MAX_PASSWD_LEN
 
-char *alphabet = "abcdefghijklmnopqrstuvwxyz";
-char *alphabet_upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-char *alphabet_numeric = "0123456789";
-char *alphabet_special = "!#$%&()*+-/<>=?@^|~";
+char *g_alphabet = "abcdefghijklmnopqrstuvwxyz";
+char *g_alphabet_upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+char *g_alphabet_numeric = "0123456789";
+char *g_alphabet_special = "!#$%&()*+-/<>=?@^|~";
+
 
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
@@ -64,6 +67,20 @@ char *alphabet_special = "!#$%&()*+-/<>=?@^|~";
 void clear_screen()
 {
     system(CLEAR);
+}
+
+void print_title()
+{
+    printf("#######\\                                        ######\\                      \n");
+    printf("##  __##\\                                      ##  __##\\                    \n");
+    printf("## |  ## |######\\   #######\\  #######\\         ## /  \\__| ######\\  #######\\  \n");
+    printf("#######  |\\____##\\ ##  _____|##  _____|######\\ ## |####\\ ##  __##\\ ##  __##\\ \n");
+    printf("##  ____/ ####### |\\######\\  \\######\\  \\______|## |\\_## |######## |## |  ## |\n");
+    printf("## |     ##  __## | \\____##\\  \\____##\\         ## |  ## |##   ____|## |  ## |\n");
+    printf("## |     \\####### |#######  |#######  |        \\######  |\\#######\\ ## |  ## |\n");
+    printf("\\__|      \\_______|\\_______/ \\_______/          \\______/  \\_______|\\__|  \\__|\n");
+    printf("\n");
+    printf("\n");
 }
 
 
@@ -140,8 +157,11 @@ int add_int(int x, int y, int *result)
 {
     // On vérifie qu'il n'y a pas d'int overflow
     if (x > INT_MAX - y)
+    {
         return -1;
-    else {
+    }
+    else 
+    {
         *result = x + y;
         return 0;
     }
@@ -163,8 +183,11 @@ int mult_int(int x, int y, int *result)
 {
     // On vérifie qu'il n'y a pas d'int overflow
     if (y != 0 && x > INT_MAX / y)
+    {
         return -1;
-    else {
+    }
+    else 
+    {
         *result = x * y;
         return 0;
     }
@@ -225,12 +248,18 @@ int get_int(char *msg)
 void generate_passwd(int nb, int len, char *passwd[])
 {
     // On initialise notre tableau d'alphabets
-    char *alphabets[4] = {alphabet, alphabet_upper, alphabet_numeric, alphabet_special};
+    char *alphabets[4] = {g_alphabet, g_alphabet_upper, g_alphabet_numeric, g_alphabet_special};
     
     for (int i = 0; i < nb; i++)
     {
         // Pour chaque mot de passe, on alloue de la mémoire
         passwd[i] = (char *) malloc(sizeof(char) * (len + 1));
+        if (passwd[i] == NULL)
+        {
+            printf("Erreur d'allocation mémoire.\n");
+            return;
+        }
+
         passwd[i][len] = '\0';
 
         // On force la présence d'au moins chaque type de caractère (on mélangera après)
@@ -253,6 +282,126 @@ void generate_passwd(int nb, int len, char *passwd[])
         // On mélange les caractères
         csprng_shuffle(passwd[i]);
     }
+}
+
+
+
+void generate_passphrase(int passwd_nb, int words_nb)
+{
+    // TODO: Supporter plusieurs langues ?
+    // On ouvre le dictionnaire
+    FILE *file = fopen("/home/mathis/Programmation/C/PasswdGen/dico.txt", "r");
+    if (file == NULL)
+    {
+        printf("Impossible d'ouvrir le fichier.\n");
+        return;
+    }
+    
+    // On récupère le nombre de mots du dictionnaire
+    int dico_size = 1;  // Init à 1 pour compter le premier mot
+    while (!feof(file))
+    {
+        char tmp = fgetc(file);
+        if (tmp == '\n')
+        {
+            dico_size++;
+        }
+    }
+    fseek(file, 0, SEEK_SET);
+
+    /* On charge le dictionnaire en mémoire.
+    On utilisera seulement un tableau car on a pas besoin de rechercher des mots
+    à l'intérieur du dictionnaire mais seulement d'en sélectionner au hasard. 
+    (donc pas besoin de structure + complexe qu'un tableau) */
+    char *dictio[dico_size];
+    
+    /* On va lire chaque ligne (=mot) du fichier et les stocker dans le tableau
+    Pour cela on commence par lire les lignes et déterminer la taille des mots 
+    puis on alloue la mémoire nécessaire */
+    int i = 0;
+    int len = 0;
+    int pos = 0;
+    while (1)
+    {
+        char tmp = fgetc(file);
+        len++;
+        if (tmp == '\n')
+        {
+            // On a trouvé un mot
+            dictio[i] = (char *) malloc(sizeof(char) * (len));
+            if (dictio[i] == NULL)
+            {
+                printf("Erreur d'allocation mémoire.\n");
+                return;
+            }
+
+            dictio[i][len - 1] = '\0';
+
+            fseek(file, pos, SEEK_SET);
+            fgets(dictio[i], len, file);
+            fgetc(file);    // On skip le '\n'
+
+            len = 0;
+            i++;
+            pos = ftell(file);
+        }
+        else if (tmp == EOF)
+        {
+            // On a atteint la fin du fichier
+            break;
+        }
+        //if (i > 6) return;
+    }
+
+    // On peut maintenant générer une passphrase
+    printf("\n\nPassphrase : \n");
+    for (int i = 0; i < passwd_nb; i++)
+    {
+        int words_pos[words_nb];
+        int sum_len = 0;
+        for (int j = 0; j < words_nb; j++)
+        {
+            int rand_word = randombytes_uniform(dico_size);
+            int len = strlen(dictio[rand_word]);
+            
+            words_pos[j] = rand_word;
+            sum_len += len;
+            if (j != words_nb - 1)
+            {
+                // On prend en compte le '-'
+                sum_len++;
+            }
+        }
+
+        // On peut maintenant allouer la mémoire et concatener les mots
+        char *passphrase = (char *) malloc(sizeof(char) * (sum_len + 1));
+        if (passphrase == NULL)
+        {
+            printf("Erreur d'allocation mémoire.\n");
+            return;
+        }
+
+        passphrase[sum_len] = '\0';
+
+        for (int j = 0; j < words_nb; j++)
+        {
+            strcat(passphrase, dictio[words_pos[j]]);
+            if (j != words_nb - 1)
+            {
+                strcat(passphrase, "-");
+            }
+        }
+        printf("%s\n", passphrase);
+        free(passphrase);
+    }
+
+    // On peut maintenant libérer la mémoire allouée
+    for (int i = 0; i < dico_size; i++)
+    {
+        free(dictio[i]);
+    }
+
+    fclose(file);
 }
 
 
@@ -286,6 +435,8 @@ int main(void)
         printf("Erreur lors de l'initialisation de sodium\n");
         return -1;
     }
+    clear_screen();
+    print_title();
 
     // On demande à l'utilisateur le nombre de mots de passe à générer
     int nb_passwd = get_int("Combien de mots de passe voulez-vous générer ?\n");
@@ -299,6 +450,7 @@ int main(void)
     }
     
     clear_screen();
+    print_title();
 
     clock_t exec_time = clock();
 
@@ -318,6 +470,7 @@ int main(void)
         free(passwords[i]);
     }
 
+    generate_passphrase(1, 5);
 
     printf("\n%d mots de passes de %d caractères ont été générés en %fs\n", nb_passwd, passwd_len, tps);
     printf("Appuyez sur entrée pour quitter...  ");
