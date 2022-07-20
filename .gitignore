@@ -2,3 +2,12 @@
 /Makefile
 /cmp.txt
 /generator
+/tst.c
+/tst
+/main
+/main.o
+/passwd_utils.o
+/terminal_ui.o
+/generator.c
+/generator.o
+/archive
