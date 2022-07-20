@@ -22,6 +22,7 @@ int mult_int(int x, int y, int *result);
 char *format_str(char *to_format, char *args[], int argc, char placeholder);
 
 void clear_input();
+void die(char *msg);
 void csprng_shuffle(char *str);
 void generate_passwd(int nb, int len, char *passwd[]);
 void generate_passphrase(int passwd_nb, int words_nb);
@@ -38,6 +39,19 @@ char *g_alphabet_special = "!#$%&()*+-/<>=?@^|~";
 
 
 /*** Fonctions ***/
+
+
+/**
+ * @brief Permet de quitter le programme en affichant un message d'erreur
+ * 
+ * @param msg Le message à afficher
+ */
+void die(char *msg)
+{
+    printf("%s\n", msg);
+    exit(EXIT_FAILURE);
+}
+
 
 /**
  * @brief Permet de demander à l'utilisateur un entier positif.
@@ -374,26 +388,30 @@ void generate_passphrase(int passwd_nb, int words_nb)
 
 /**
  * @brief Permet d'insérer un ou plusieurs string dans un autre string.
+ *  
+ * Important: Il est primordial de free() le string retourné.
  * 
  * @param to_format Le string à formater.
  * @param args Les strings à insérer (! doivent être dans l'ordre).
  * @param argc Le nombre de strings à insérer.
  * @param placeholder Le symbole permettant d'indiquer où placer les strings.
+ * Attention doit être 1 seul char
  * @return Le string formaté.
  */
-char *format_str(char *to_format, char *args[], int argc, char placeholder)
+char *format_str(char *to_format, char **args, int argc, char placeholder)
 {
-    // On alloue la mémoire pour le str final
+    // On calcule la taille finale du string formaté.
     int final_len = strlen(to_format) - argc;
-    
     for (int i = 0; i < argc; i++)
     {
         final_len += strlen(args[i]);
     }
+
+    // On alloue la mémoire pour le string formaté.
     char *result = (char *) malloc(sizeof(char) * (final_len + 1));
     if (result == NULL) die("Erreur d'allocation mémoire.\n");
 
-    // On peut maintenant placer les arguments dans le str final
+    // On peut maintenant insérer les arguments dans le string final
     int arg_idx = 0;
     int i = 0;
     int d = 0;
