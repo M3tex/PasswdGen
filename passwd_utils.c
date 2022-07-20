@@ -9,6 +9,7 @@ utilitaires */
 #include <limits.h>
 #include <unistd.h>
 #include <sodium.h>
+#include <math.h>
 
 
 
@@ -20,6 +21,7 @@ int add_int(int x, int y, int *result);
 int mult_int(int x, int y, int *result);
 
 char *format_str(char *to_format, char *args[], int argc, char placeholder);
+char *int2str(int x);
 
 void clear_input();
 void die(char *msg);
@@ -398,7 +400,7 @@ void generate_passphrase(int passwd_nb, int words_nb)
  * Attention doit être 1 seul char
  * @return Le string formaté.
  */
-char *format_str(char *to_format, char **args, int argc, char placeholder)
+char *format_str(char *to_format, char *args[], int argc, char placeholder)
 {
     // On calcule la taille finale du string formaté.
     int final_len = strlen(to_format) - argc;
@@ -408,7 +410,7 @@ char *format_str(char *to_format, char **args, int argc, char placeholder)
     }
 
     // On alloue la mémoire pour le string formaté.
-    char *result = (char *) malloc(sizeof(char) * (final_len + 1));
+    char *result = (char *) malloc(sizeof(char) * (final_len) + 1);
     if (result == NULL) die("Erreur d'allocation mémoire.\n");
 
     // On peut maintenant insérer les arguments dans le string final
@@ -434,5 +436,15 @@ char *format_str(char *to_format, char **args, int argc, char placeholder)
         }
         i++;
     }
+    return result;
+}
+
+
+char *int2str(int x)
+{
+    char *result = (char *) malloc(sizeof(char) * ceil(log10(x)) + 1);
+    if (result == NULL) die("Erreur d'allocation mémoire.\n");
+
+    sprintf(result, "%d", x);
     return result;
 }
