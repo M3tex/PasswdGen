@@ -55,9 +55,8 @@ struct abuf
 /*** Variables globales ***/
 
 char *VERSION = "Password Generator v0.1";
-char *AUTHOR = "Built by Mathis Sedkaoui ";
+char *AUTHOR = "Built by M3tex ";
 char *HELP = " ctrl + h for help";
-// char *STATUSBAR = "%s%s%s%s%s";
 
 char *TITLE_1 = "#######\\                                        ######\\                      \r\n";
 char *TITLE_2 = "##  __##\\                                      ##  __##\\                    \r\n";
@@ -67,6 +66,14 @@ char *TITLE_5 = "##  ____/ ####### |\\######\\  \\######\\  \\______|## |\\_## |
 char *TITLE_6 = "## |     ##  __## | \\____##\\  \\____##\\         ## |  ## |##   ____|## |  ## |\r\n";
 char *TITLE_7 = "## |     \\####### |#######  |#######  |        \\######  |\\#######\\ ## |  ## |\r\n";
 char *TITLE_8 = "\\__|      \\_______|\\_______/ \\_______/          \\______/  \\_______|\\__|  \\__|\r\n";
+
+char *WELCOME1 = " Welcome to PasswdGen ! This tool is built to generate strong passwords, using a CSPRNG.\r\n";
+char *WELCOME2 = " It has several modes: password generator, passphrase generator and password strength tester !\r\n\r\n";
+char *WELCOME3 = " To get started select a mode: \r\n";
+
+char *MODE1 = "~Password Generator               Passphrase Generator                Strenght Tester\r\n";
+char *MODE2 = "~    (ctrl + g)                        (ctrl + p)                        (ctrl + t)  \r\n";
+
 
 
 
@@ -256,6 +263,8 @@ void editorProcessKeypress()
     {
     case CTRL_KEY('q'):
         clear_screen();
+        // On réaffiche le curseur
+        printf("\x1b[?25h");
         exit(0);
         break;
     case CTRL_KEY('c'):
@@ -291,20 +300,21 @@ void editorRefreshScreen()
     abAppend(&ab, "\x1b[H", 3);
 
     // On affiche le titre
-    print_title(&ab);
+    // print_title(&ab);
 
 
     // On affiche la status bar
-    print_statusbar(&ab);
+    // print_statusbar(&ab);
 
     // On repositionne en haut à gauche
     // TODO: le repositionner sous le titre
-    abAppend(&ab, "\x1b[H", 3);
+    // abAppend(&ab, "\x1b[H", 3);
 
     // On affiche la fenêtre actuelle
     if (E.main_menu)
     {
         // TODO: Fonction pour afficher le menu principal
+        print_main_menu(&ab);
     }
     else if (E.passwd_menu)
     {
@@ -336,8 +346,10 @@ void print_title(struct abuf *ab)
     int nb_spaces = (E.screencols - strlen(title[0]) + 2) / 2;
 
     char *spaces = malloc(sizeof(char) * nb_spaces + 1);
+    spaces[nb_spaces] = '\0';
     memset(spaces, ' ', nb_spaces);
     
+    abAppend(ab, "\r\n", 2);
     for (int i = 0; i < 8; i++)
     {
         abAppend(ab, spaces, nb_spaces);
@@ -359,9 +371,9 @@ void print_statusbar(struct abuf *ab)
 
     // On centre le message
     int nb_spaces = (E.screencols - (strlen(HELP) + strlen(VERSION) + strlen(AUTHOR))) / 2;
-    int size_status = strlen(HELP) + strlen(VERSION) + strlen(AUTHOR) + nb_spaces * 2;
 
-    char *spaces = malloc(sizeof(char) * nb_spaces);
+    char *spaces = malloc(sizeof(char) * nb_spaces + 1);
+    spaces[nb_spaces] = '\0';
     memset(spaces, ' ', nb_spaces);
 
     char *args[5] = {HELP, spaces, VERSION, spaces, AUTHOR};
@@ -369,6 +381,51 @@ void print_statusbar(struct abuf *ab)
     abAppend(ab, status, strlen(status));
     free(spaces);
     free(status);
+}
+
+
+void print_main_menu(struct abuf *ab)
+{
+    // On affiche le titre
+    print_title(ab);
+
+    // On affiche le message de bienvenue
+    char *menu[3] = {WELCOME1, WELCOME2, WELCOME3};
+    abAppend(ab, "\r\n\r\n", 4);
+    
+    for (int i = 0; i < 3; i++)
+    {
+        abAppend(ab, menu[i], strlen(menu[i]));
+    }
+
+    // Calcule les espaces entre les modes
+    char *mode[2] = {MODE1, MODE2};
+    int center_modes = (E.screencols - strlen(mode[0]) - 3) / 2;
+
+    char *spaces1 = malloc(sizeof(char) * center_modes + 1);
+    spaces1[center_modes] = '\0';
+    memset(spaces1, ' ', center_modes);
+
+    char *line1_args[1] = {spaces1};
+    char *line1 = format_str(MODE1, line1_args, 1, '~');
+
+    char *line2 = format_str(MODE2, line1_args, 1, '~');
+
+    // On peut afficher 
+    abAppend(ab, line1, strlen(line1));
+    abAppend(ab, line2, strlen(line2));
+
+    // On libère la mémoire
+    free(spaces1);
+    free(line1);
+    free(line2);
+    
+
+    // On affiche la status bar
+    print_statusbar(ab);
+
+    // On repositionne le curseur en haut à gauche
+    abAppend(ab, "\x1b[H", 3);
 }
 
 
