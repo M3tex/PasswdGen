@@ -11,3 +11,4 @@
 /generator.c
 /generator.o
 /archive
+/valgrind.txt
