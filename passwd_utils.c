@@ -194,7 +194,7 @@ int mult_int(int x, int y, int *result)
 
 /**
  * @brief Permet d'effacer les caractères saisis par l'utilisateur
- * et non lus par fgets().
+ * et non désirés.
  * 
  */
 void clear_input()
@@ -224,6 +224,7 @@ void csprng_shuffle(char *str)
 
 /**
  * @brief Permet de générer nb mots de passes de longueur len.
+ * Important: Il faudra free() le tableau passé.
  * 
  * @param nb Le nombre de mots de passes à générer.
  * @param len La longueur des mots de passes
