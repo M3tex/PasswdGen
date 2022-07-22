@@ -437,6 +437,7 @@ char *format_str(char *to_format, char *args[], int argc, char placeholder)
         }
         i++;
     }
+    result[final_len] = '\0';
     return result;
 }
 
