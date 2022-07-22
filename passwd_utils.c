@@ -392,7 +392,7 @@ void generate_passphrase(int passwd_nb, int words_nb)
 /**
  * @brief Permet d'insérer un ou plusieurs string dans un autre string.
  *  
- * Important: Il est primordial de free() le string retourné.
+ * Important: Il est primordial de free() le string retourné !
  * 
  * @param to_format Le string à formater.
  * @param args Les strings à insérer (! doivent être dans l'ordre).
@@ -404,7 +404,7 @@ void generate_passphrase(int passwd_nb, int words_nb)
 char *format_str(char *to_format, char *args[], int argc, char placeholder)
 {
     // On calcule la taille finale du string formaté.
-    int final_len = strlen(to_format) - argc;
+    int final_len = strlen(to_format) - argc;   // - argc pour enlever les placeholders
     for (int i = 0; i < argc; i++)
     {
         final_len += strlen(args[i]);
@@ -416,8 +416,8 @@ char *format_str(char *to_format, char *args[], int argc, char placeholder)
 
     // On peut maintenant insérer les arguments dans le string final
     int arg_idx = 0;
+    int d = 0;  // Le décalage induit par l'insertion des strings
     int i = 0;
-    int d = 0;
     while (i < strlen(to_format))
     {
         if (to_format[i] == placeholder)
@@ -428,7 +428,7 @@ char *format_str(char *to_format, char *args[], int argc, char placeholder)
                 result[i + d + j] = args[arg_idx][j];
                 j++;
             }
-            d += strlen(args[arg_idx]) - 1;     // -1 car on fera le i++ plus loin
+            d += strlen(args[arg_idx]) - 1;     // -1 car on fait le i++ plus bas
             arg_idx++;
         }
         else
@@ -442,6 +442,13 @@ char *format_str(char *to_format, char *args[], int argc, char placeholder)
 }
 
 
+/**
+ * @brief Convertit un entier en string.
+ * Important: il faudra free() le string retourné !
+ * 
+ * @param x L'entier à convertir
+ * @return Le string correspondant.
+ */
 char *int2str(int x)
 {
     char *result = (char *) malloc(sizeof(char) * ceil(log10(x)) + 1);
