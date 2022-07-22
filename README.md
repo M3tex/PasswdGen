@@ -5,3 +5,6 @@ It will feature:
 - Password Generation (full random or with patterns like XXXX-XXXX-XXXX, ...)
 - PassPhrase Generation
 - Password Strengh Tester
+
+## What it currently looks like
+![Screenshot](screenshots/PasswdGen.jpg?raw=true "PasswdGen")
