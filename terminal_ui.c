@@ -51,13 +51,34 @@ struct abuf
 #define ABUF_INIT {NULL, 0}
 
 
+struct passwd_menu_data
+{
+    int nb_passwd;
+    int nb_chars;
+    char *special_chars;
+
+    int selected_param;
+};
+struct passwd_menu_data PasswordParams;
+
+
+struct passphrase_menu_data
+{
+    int nb_passphrase;
+    int nb_words;
+    bool spell_word;
+    char *word2spell; // Optionnel
+};
+struct passphrase_menu_data PassphraseParams;
+
+
 
 /*** Variables globales ***/
 
 // Status Bar
-char *VERSION = "Password Generator v0.1";
-char *AUTHOR = "Built by M3tex ";
-char *HELP = " ctrl + h for help";
+char *SB_MIDDLE = "Password Generator v0.1";
+char *SB_RIGHT = "Built by M3tex ";
+char *SB_LEFT = " ctrl + h for help";
 
 // Titre
 char *TITLE_1 = "#######\\                                        ######\\                      \r\n";
@@ -78,6 +99,14 @@ char *MODE1 = "~Password Generator               Passphrase Generator           
 char *MODE2 = "~    (ctrl + g)                        (ctrl + p)                        (ctrl + t)  \r\n";
 
 // Password Menu
+char *PASSWD_WELCOME = "~Welcome to the password generator.\r\n\r\n";
+char *PASSWD_EXPLAIN1 = "~Use up and down arrows to select a parameter (marked by '\033[96m>\033[0m').\r\n";
+char *PASSWD_EXPLAIN2 = "~Use left and right arrows to modify the selected parameter.\r\n";
+char *PASSWD_EXPLAIN3 = "~Once done, simply press ctrl + g !\r\n\r\n";
+
+char *PASSWD_PARAM1 = "~~Number of passwords: ~\r\n";
+char *PASSWD_PARAM2 = "~~Number of characters: ~\r\n";
+char *PASSWD_PARAM3 = "~~Special characters (press ctrl + ! to modify): ~\r\n";
 
 
 // Passphrase Menu
@@ -186,19 +215,31 @@ void update_terminal()
 
 void set_main_menu()
 {
+    // On réinitialise les variables
     E.main_menu = true;
     E.passwd_menu = false;
     E.passphrase_menu = false;
     E.strenght_menu = false;
+
+    // La status bar est réinitialisée
+    SB_MIDDLE = "Password Generator v0.1";
+    SB_RIGHT = "Built by M3tex ";
+    SB_LEFT = " ctrl + h for help";
 }
 
 
 void set_passwd_menu()
 {
+    // On réinitialise les variables
     E.main_menu = false;
     E.passwd_menu = true;
     E.passphrase_menu = false;
     E.strenght_menu = false;
+
+    // On initialise avec les paramètres par défaut
+    PasswordParams.nb_passwd = 5;
+    PasswordParams.nb_chars = 12;
+    PasswordParams.special_chars = "!@#$%^&*()_+-=[]{}|;':,./<>?";
 }
 
 
@@ -285,10 +326,57 @@ void editorProcessKeypress()
         clear_input();
         break;
     case CTRL_KEY('g'):
+        if (E.passwd_menu)
+        {
+            // TODO: générer les mots de passe
+            break;
+        }
         set_passwd_menu();
         break;
     case CTRL_KEY('m'):
         set_main_menu();
+        break;
+    case 'Z':
+        if (E.passwd_menu && PasswordParams.selected_param > 0)
+        {
+            PasswordParams.selected_param--;
+            editorRefreshScreen();
+        }
+        break;
+    case 'S':
+        if (E.passwd_menu && PasswordParams.selected_param < 2)
+        {
+            PasswordParams.selected_param++;
+            editorRefreshScreen();
+        }
+        break;
+    case 'Q':
+        if (E.passwd_menu)
+        {
+            if (PasswordParams.selected_param == 0 && PasswordParams.nb_passwd > 1)
+            {
+                PasswordParams.nb_passwd--;
+            }
+            else if (PasswordParams.selected_param == 1 && PasswordParams.nb_chars > 4)
+            {
+                PasswordParams.nb_chars--;
+            }
+            editorRefreshScreen();
+        }
+        break;
+    case 'D':
+        if (E.passwd_menu)
+        {
+            if (PasswordParams.selected_param == 0)
+            {
+                PasswordParams.nb_passwd++;
+            }
+            else if (PasswordParams.selected_param == 1)
+            {
+                PasswordParams.nb_chars++;
+            }
+            editorRefreshScreen();
+        }
         break;
     }
 }
@@ -327,6 +415,7 @@ void editorRefreshScreen()
     {
         // TODO: Fonction pour afficher le menu de génération de mot de passe
         print_passwd_menu(&ab);
+
     }
     else if (E.passphrase_menu)
     {
@@ -375,13 +464,13 @@ void print_statusbar(struct abuf *ab)
     free(pos);
 
     // On centre le message
-    int nb_spaces = (E.screencols - (strlen(HELP) + strlen(VERSION) + strlen(AUTHOR))) / 2;
+    int nb_spaces = (E.screencols - (strlen(SB_LEFT) + strlen(SB_MIDDLE) + strlen(SB_RIGHT))) / 2;
 
     char *spaces = malloc(sizeof(char) * nb_spaces + 1);
     spaces[nb_spaces] = '\0';
     memset(spaces, ' ', nb_spaces);
 
-    char *args[5] = {HELP, spaces, VERSION, spaces, AUTHOR};
+    char *args[5] = {SB_LEFT, spaces, SB_MIDDLE, spaces, SB_RIGHT};
     char *status = format_str("\033[30;107m~~~~~\033[0m", args, 5, '~');
     abAppend(ab, status, strlen(status));
     free(spaces);
@@ -438,13 +527,83 @@ void print_passwd_menu(struct abuf *ab)
     // On affiche le titre
     print_title(ab);
 
-    // On affiche les paramètres du menu
-    
+    // On saute une ligne
+    abAppend(ab, "\r\n", strlen("\r\n"));
+
+    // On calcule le décalage pour le premier message
+    int nb_spaces_welcome = (E.screencols - strlen(PASSWD_WELCOME)) / 2;
+
+    // Idem pour les autres
+    int nb_spaces_other = (E.screencols - strlen(PASSWD_EXPLAIN1)) / 2;
+
+    // On alloue la mémoire pour les espaces
+    char *spaces_welcome = (char *) malloc(sizeof(char) * nb_spaces_welcome + 1);
+    spaces_welcome[nb_spaces_welcome] = '\0';
+    memset(spaces_welcome, ' ', nb_spaces_welcome);
+
+    char *spaces_other = (char *) malloc(sizeof(char) * nb_spaces_other + 1);
+    spaces_other[nb_spaces_other] = '\0';
+    memset(spaces_other, ' ', nb_spaces_other);
+
+    // On insère les espaces dans les messages
+    char *welcome = format_str(PASSWD_WELCOME, &spaces_welcome, 1, '~');
+    char *explain1 = format_str(PASSWD_EXPLAIN1, &spaces_other, 1, '~');
+    char *explain2 = format_str(PASSWD_EXPLAIN2, &spaces_other, 1, '~');
+    char *explain3 = format_str(PASSWD_EXPLAIN3, &spaces_other, 1, '~');
+
+    // On affiche les messages
+    abAppend(ab, welcome, strlen(welcome));
+    abAppend(ab, explain1, strlen(explain1));
+    abAppend(ab, explain2, strlen(explain2));
+    abAppend(ab, explain3, strlen(explain3));
+
+
+    // Idem pour les paramètres en rajoutant les infos
+    char *templates[3] = {PASSWD_PARAM1, PASSWD_PARAM2, PASSWD_PARAM3};
+    char *infos[3] = {int2str(PasswordParams.nb_passwd), int2str(PasswordParams.nb_chars), PasswordParams.special_chars};
+
+    for (int i = 0; i < 3; i++)
+    {
+        char *selection = "\0";
+        if (i == PasswordParams.selected_param)
+        {
+            selection = "\033[96m> \033[0m";
+        }
+        char *args_param[3] = {spaces_other, selection, infos[i]};
+
+        char *tmp = format_str(templates[i], args_param, 3, '~');
+        abAppend(ab, tmp, strlen(tmp));
+
+        // On libère la mémoire allouée par format_str()
+        free(tmp);
+    }
+
+    // On modifie le message du milieu de la statusbar
+    char *pluriel = "s ";
+    if (PasswordParams.nb_passwd == 1) pluriel = " ";
+
+    char *sb_args[3] = {int2str(PasswordParams.nb_passwd), pluriel, int2str(PasswordParams.nb_chars)};
+    SB_MIDDLE = format_str("~ password~of ~ characters will be generated", sb_args, 3, '~');
 
     // On affiche la status bar
     print_statusbar(ab);
 
-    // On libère la mémoire allouée
+    // On libère la mémoire allouée dans cette fonction
+    free(spaces_welcome);
+    free(spaces_other);
+
+    // La mémoire allouée par format_str()
+    free(welcome);
+    free(explain1);
+    free(explain2);
+    free(explain3);
+    free(SB_MIDDLE);
+
+    // La mémoire allouée par int2str()
+    free(infos[0]);
+    free(infos[1]);
+    free(sb_args[0]);
+    free(sb_args[2]);
 }
 
 
@@ -479,5 +638,25 @@ char editorReadKey()
     {
         if (nread == -1 && errno != EAGAIN) die("Unable to read from stdin");
     }
+
+    if (c == '\x1b')
+    {
+        char seq[3];
+        if (read(STDIN_FILENO, &seq[0], 1) != 1) return '\x1b';
+        if (read(STDIN_FILENO, &seq[1], 1) != 1) return '\x1b';
+
+        if (seq[0] == '[')
+        {
+            switch (seq[1])
+            {
+                case 'A': return 'Z';
+                case 'B': return 'S';
+                case 'C': return 'D';
+                case 'D': return 'Q';
+            }
+        }
+        return '\x1b';
+    }
+
     return c;
 }
