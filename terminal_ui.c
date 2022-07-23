@@ -54,10 +54,12 @@ struct abuf
 
 /*** Variables globales ***/
 
+// Status Bar
 char *VERSION = "Password Generator v0.1";
 char *AUTHOR = "Built by M3tex ";
 char *HELP = " ctrl + h for help";
 
+// Titre
 char *TITLE_1 = "#######\\                                        ######\\                      \r\n";
 char *TITLE_2 = "##  __##\\                                      ##  __##\\                    \r\n";
 char *TITLE_3 = "## |  ## |######\\   #######\\  #######\\         ## /  \\__| ######\\  #######\\  \r\n";
@@ -67,13 +69,21 @@ char *TITLE_6 = "## |     ##  __## | \\____##\\  \\____##\\         ## |  ## |##
 char *TITLE_7 = "## |     \\####### |#######  |#######  |        \\######  |\\#######\\ ## |  ## |\r\n";
 char *TITLE_8 = "\\__|      \\_______|\\_______/ \\_______/          \\______/  \\_______|\\__|  \\__|\r\n";
 
+// Main Menu
 char *WELCOME1 = " Welcome to PasswdGen ! This tool is built to generate strong passwords, using a CSPRNG.\r\n";
 char *WELCOME2 = " It has several modes: password generator, passphrase generator and password strength tester !\r\n\r\n";
-char *WELCOME3 = " To get started select a mode: \r\n";
+char *WELCOME3 = " To get started select a mode: \r\n\r\n";
 
 char *MODE1 = "~Password Generator               Passphrase Generator                Strenght Tester\r\n";
 char *MODE2 = "~    (ctrl + g)                        (ctrl + p)                        (ctrl + t)  \r\n";
 
+// Password Menu
+
+
+// Passphrase Menu
+
+
+// Strenght Tester Menu
 
 
 
@@ -91,6 +101,8 @@ void abFree(struct abuf *ab);
 void abAppend(struct abuf *ab, const char *s, int n);
 void print_statusbar(struct abuf *ab);
 void print_title(struct abuf *ab);
+void print_main_menu(struct abuf *ab);
+void print_passwd_menu(struct abuf *ab);
 char editorReadKey();
 void update_terminal();
 void set_main_menu();
@@ -154,6 +166,9 @@ void init_terminal()
 {
     // Appelée au démarrage du programme
     if (getTerminalSize(&E.screenrows, &E.screencols) == -1) die("Unable to compute terminal size");
+
+    // Permet de cacher le curseur
+    printf("\x1b[?25l");
     set_main_menu();
 }
 
@@ -163,8 +178,6 @@ void update_terminal()
     // Appelée à chaque fois que l'interface est mise à jour
     if (getTerminalSize(&E.screenrows, &E.screencols) == -1) die("Unable to compute terminal size");
 
-    // Efface le curseur
-    printf("\x1b[?25l");
     editorRefreshScreen();
     clear_input();
     editorProcessKeypress();
@@ -271,6 +284,12 @@ void editorProcessKeypress()
         clear_screen();
         clear_input();
         break;
+    case CTRL_KEY('g'):
+        set_passwd_menu();
+        break;
+    case CTRL_KEY('m'):
+        set_main_menu();
+        break;
     }
 }
 
@@ -284,14 +303,13 @@ void editorRefreshScreen()
     struct abuf ab = ABUF_INIT;
 
     // Permet de cacher le curseur
-    abAppend(&ab, "\x1b[?25l", 6);
+    abAppend(&ab, "\x1b[?25l", strlen("\x1b[?25l"));
 
     /* On efface l'écran avec la commande J (Erase in Display). Le 2 spécifie d'effacer tout l'écran.
     On pourrait également effacer du haut jusqu'au curseur avec 1, ou du curseur jusqu'au bas avec 0.
     Attention car ici le curseur est replacé à la fin. */
     abAppend(&ab, "\x1b[2J", 4);
 
-    //clear_screen();
     /* On repositionne le curseur au bon endroit avec la commande H (Cursor Position).
     La commande H prend 2 arguments: le numéro de ligne et le numéro de colonne.
     Par défaut, le numéro de ligne est 1 et le numéro de colonne est 1 (on laisse donc par défaut,
@@ -299,26 +317,16 @@ void editorRefreshScreen()
     */
     abAppend(&ab, "\x1b[H", 3);
 
-    // On affiche le titre
-    // print_title(&ab);
-
-
-    // On affiche la status bar
-    // print_statusbar(&ab);
-
-    // On repositionne en haut à gauche
-    // TODO: le repositionner sous le titre
-    // abAppend(&ab, "\x1b[H", 3);
-
     // On affiche la fenêtre actuelle
+    // TODO: Utiliser un enum pour définir la fenêtre actuelle
     if (E.main_menu)
     {
-        // TODO: Fonction pour afficher le menu principal
         print_main_menu(&ab);
     }
     else if (E.passwd_menu)
     {
         // TODO: Fonction pour afficher le menu de génération de mot de passe
+        print_passwd_menu(&ab);
     }
     else if (E.passphrase_menu)
     {
@@ -328,9 +336,6 @@ void editorRefreshScreen()
     {
         // TODO: Fonction pour afficher le menu de test de force du mot de passe
     }
-
-    // Permet de réafficher le curseur
-    // abAppend(&ab, "\x1b[?25h", 6);
 
     // On écrit le contenu de l'abuf dans le terminal
     write(STDOUT_FILENO, ab.b, ab.len);
@@ -391,7 +396,7 @@ void print_main_menu(struct abuf *ab)
 
     // On affiche le message de bienvenue
     char *menu[3] = {WELCOME1, WELCOME2, WELCOME3};
-    abAppend(ab, "\r\n\r\n", 4);
+    abAppend(ab, "\r\n\r\n", strlen("\r\n\r\n"));
     
     for (int i = 0; i < 3; i++)
     {
@@ -402,30 +407,44 @@ void print_main_menu(struct abuf *ab)
     char *mode[2] = {MODE1, MODE2};
     int center_modes = (E.screencols - strlen(mode[0]) - 3) / 2;
 
-    char *spaces1 = malloc(sizeof(char) * center_modes + 1);
-    spaces1[center_modes] = '\0';
-    memset(spaces1, ' ', center_modes);
+    char *spaces = (char *) malloc(sizeof(char) * center_modes + 1);
+    spaces[center_modes] = '\0';
+    memset(spaces, ' ', center_modes);
 
-    char *line1_args[1] = {spaces1};
-    char *line1 = format_str(MODE1, line1_args, 1, '~');
+    char *line1_args[1] = {spaces};
+    
+    char *line1 = format_str(mode[0], line1_args, 1, '~');
+    char *line2 = format_str(mode[1], line1_args, 1, '~');
 
-    char *line2 = format_str(MODE2, line1_args, 1, '~');
-
-    // On peut afficher 
+    // On peut afficher
     abAppend(ab, line1, strlen(line1));
     abAppend(ab, line2, strlen(line2));
+    
+    // On affiche la status bar
+    print_statusbar(ab);
 
-    // On libère la mémoire
-    free(spaces1);
+    // On repositionne le curseur en haut à gauche
+    abAppend(ab, "\x1b[H", strlen("\x1b[H"));
+
+    // On libère la mémoire allouée
+    free(spaces);
     free(line1);
     free(line2);
+}
+
+
+void print_passwd_menu(struct abuf *ab)
+{
+    // On affiche le titre
+    print_title(ab);
+
+    // On affiche les paramètres du menu
     
 
     // On affiche la status bar
     print_statusbar(ab);
 
-    // On repositionne le curseur en haut à gauche
-    abAppend(ab, "\x1b[H", 3);
+    // On libère la mémoire allouée
 }
 
 
@@ -458,7 +477,7 @@ char editorReadKey()
     char c;
     while ((nread = read(STDIN_FILENO, &c, 1)) != 1) 
     {
-        if (nread == -1 && errno != EAGAIN) die("read");
+        if (nread == -1 && errno != EAGAIN) die("Unable to read from stdin");
     }
     return c;
 }
