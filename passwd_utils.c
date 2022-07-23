@@ -453,9 +453,10 @@ char *format_str(char *to_format, char *args[], int argc, char placeholder)
  */
 char *int2str(int x)
 {
-    char *result = (char *) malloc(sizeof(char) * ceil(log10(x)) + 1);
+    char *result = (char *) malloc(sizeof(char) * floor(log10(x) + 1) + 1);
     if (result == NULL) die("Erreur d'allocation mémoire.\n");
 
     sprintf(result, "%d", x);
+    
     return result;
 }
