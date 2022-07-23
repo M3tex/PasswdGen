@@ -414,28 +414,30 @@ char *format_str(char *to_format, char *args[], int argc, char placeholder)
     char *result = (char *) malloc(sizeof(char) * (final_len) + 1);
     if (result == NULL) die("Erreur d'allocation mémoire.\n");
 
-    // On peut maintenant insérer les arguments dans le string final
+    // Le décalage induit par l'insertion des strings
+    int d = 0;
+
+    // L'indice du string à insérer
     int arg_idx = 0;
-    int d = 0;  // Le décalage induit par l'insertion des strings
-    int i = 0;
-    while (i < strlen(to_format))
+
+    for (int i = 0; i < strlen(to_format); i++)
     {
         if (to_format[i] == placeholder)
         {
-            int j = 0;
-            while(j < strlen(args[arg_idx]))
+            /* Si on trouve un placeholder, on insère le string suivant
+            et on met à jour le décalage */
+            for (int j = 0; j < strlen(args[arg_idx]); j++)
             {
                 result[i + d + j] = args[arg_idx][j];
-                j++;
             }
-            d += strlen(args[arg_idx]) - 1;     // -1 car on fait le i++ plus bas
+            d += strlen(args[arg_idx]) - 1;     // -1 car on fait le i++ dans la boucle
             arg_idx++;
         }
         else
         {
+            // Sinon on copie le caractère en prenant en compte le décalage
             result[i + d] = to_format[i];
         }
-        i++;
     }
     result[final_len] = '\0';
     return result;
