@@ -7,4 +7,8 @@ It will feature:
 - Password Strengh Tester
 
 ## What it currently looks like
-![Screenshot](screenshots/PasswdGen.jpg?raw=true "PasswdGen")
+### Main Menu
+![MainMenu](screenshots/PasswdGen.jpg?raw=true "PasswdGen")
+
+### Password Generation Menu
+![MainMenu](screenshots/PasswdGen_PasswdMenu.jpg?raw=true "PasswdGen_PasswdMenu")
