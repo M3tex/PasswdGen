@@ -26,7 +26,7 @@ char *int2str(int x);
 void clear_input();
 void die(char *msg);
 void csprng_shuffle(char *str);
-void generate_passwd(int nb, int len, char *passwd[]);
+void generate_passwd(int nb, int len, char *passwd[], char *special_chars);
 void generate_passphrase(int passwd_nb, int words_nb);
 
 
@@ -230,10 +230,13 @@ void csprng_shuffle(char *str)
  * @param len La longueur des mots de passes
  * @param passwd Le tableau où on stockera les mots de passes
  */
-void generate_passwd(int nb, int len, char *passwd[])
+void generate_passwd(int nb, int len, char *passwd[], char *special_chars)
 {
     // On initialise notre tableau d'alphabets
-    char *alphabets[4] = {g_alphabet, g_alphabet_upper, g_alphabet_numeric, g_alphabet_special};
+    char *alphabets[4] = {g_alphabet, g_alphabet_upper, g_alphabet_numeric, special_chars};
+
+    int nb_alphabets = 4;
+    if (special_chars == "") nb_alphabets = 3;
     
     for (int i = 0; i < nb; i++)
     {
@@ -248,16 +251,16 @@ void generate_passwd(int nb, int len, char *passwd[])
         passwd[i][len] = '\0';
 
         // On force la présence d'au moins chaque type de caractère (on mélangera après)
-        for (int n = 0; n < 4; n++)
+        for (int n = 0; n < nb_alphabets; n++)
         {
             passwd[i][n] = alphabets[n][randombytes_uniform(strlen(alphabets[n]))];
         }
 
         // On remplit le reste en tirant des caractères aléatoires
-        for (int j = 4; j < len; j++)
+        for (int j = nb_alphabets; j < len; j++)
         {
             // On choisit un type de caractère aléatoire
-            int rand_alph = randombytes_uniform(4);
+            int rand_alph = randombytes_uniform(nb_alphabets);
             
             // On peut maintenant sélectionner un caractère aléatoire
             int rand_char = randombytes_uniform(strlen(alphabets[rand_alph]));

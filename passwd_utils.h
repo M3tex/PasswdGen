@@ -11,5 +11,5 @@ char *int2str(int x);
 void clear_input();
 void die(char *msg);
 void csprng_shuffle(char *str);
-void generate_passwd(int nb, int len, char *passwd[]);
+void generate_passwd(int nb, int len, char *passwd[], char *special_chars);
 void generate_passphrase(int passwd_nb, int words_nb);
