@@ -10,6 +10,7 @@ Ce fichier contiendra toutes les fonctions nécessaire
 #include <ctype.h>
 #include <errno.h>
 #include <math.h>
+#include <time.h>
 #include <sys/ioctl.h>
 #include <stdbool.h>
 
@@ -56,8 +57,10 @@ struct passwd_menu_data
     int nb_passwd;
     int nb_chars;
     char *special_chars;
+    char **passwords;
 
     int selected_param;
+    bool generate;
 };
 struct passwd_menu_data PasswordParams;
 
@@ -138,6 +141,7 @@ void set_main_menu();
 void set_passwd_menu();
 void set_passphrase_menu();
 void set_strenght_menu();
+void print_passwd_result(struct abuf *ab);
 
 
 
@@ -240,6 +244,7 @@ void set_passwd_menu()
     PasswordParams.nb_passwd = 5;
     PasswordParams.nb_chars = 12;
     PasswordParams.special_chars = "!@#$%^&*()_+-=[]{}|;':,./<>?";
+    PasswordParams.generate = false;
 }
 
 
@@ -328,7 +333,8 @@ void editorProcessKeypress()
     case CTRL_KEY('g'):
         if (E.passwd_menu)
         {
-            // TODO: générer les mots de passe
+            if (E.passwd_menu) PasswordParams.generate = true;
+            editorRefreshScreen();
             break;
         }
         set_passwd_menu();
@@ -337,21 +343,21 @@ void editorProcessKeypress()
         set_main_menu();
         break;
     case 'Z':
-        if (E.passwd_menu && PasswordParams.selected_param > 0)
+        if (E.passwd_menu && PasswordParams.selected_param > 0 && !PasswordParams.generate)
         {
             PasswordParams.selected_param--;
             editorRefreshScreen();
         }
         break;
     case 'S':
-        if (E.passwd_menu && PasswordParams.selected_param < 2)
+        if (E.passwd_menu && PasswordParams.selected_param < 2 && !PasswordParams.generate)
         {
             PasswordParams.selected_param++;
             editorRefreshScreen();
         }
         break;
     case 'Q':
-        if (E.passwd_menu)
+        if (E.passwd_menu && !PasswordParams.generate)
         {
             if (PasswordParams.selected_param == 0 && PasswordParams.nb_passwd > 1)
             {
@@ -365,7 +371,7 @@ void editorProcessKeypress()
         }
         break;
     case 'D':
-        if (E.passwd_menu)
+        if (E.passwd_menu && !PasswordParams.generate)
         {
             if (PasswordParams.selected_param == 0)
             {
@@ -413,8 +419,15 @@ void editorRefreshScreen()
     }
     else if (E.passwd_menu)
     {
-        // TODO: Fonction pour afficher le menu de génération de mot de passe
-        print_passwd_menu(&ab);
+        if (PasswordParams.generate)
+        {
+            print_passwd_result(&ab);
+        }
+        else
+        {
+            print_passwd_menu(&ab);
+            
+        }
 
     }
     else if (E.passphrase_menu)
@@ -602,6 +615,82 @@ void print_passwd_menu(struct abuf *ab)
     // La mémoire allouée par int2str()
     free(infos[0]);
     free(infos[1]);
+    free(sb_args[0]);
+    free(sb_args[2]);
+}
+
+
+void print_passwd_result(struct abuf *ab)
+{
+    // On affiche le titre
+    print_title(ab);
+
+    // On saute une ligne
+    abAppend(ab, "\r\n", strlen("\r\n"));
+
+    // On génère les mdp
+    char *passwords[PasswordParams.nb_passwd];
+    clock_t start = clock();
+    generate_passwd(PasswordParams.nb_passwd, PasswordParams.nb_chars, passwords, PasswordParams.special_chars);
+    clock_t exec_time = clock() - start;
+
+    // Si pas assez de place pour afficher tous les mdp, on les met dans un fichier
+    if (PasswordParams.nb_passwd > 8 + 3 + 1 + 5 || PasswordParams.nb_chars > E.screencols - 2)
+    {
+        // TODO: Ecrire dans fichier
+        return;
+    }
+
+    // On affiche un message
+    char *message = "~Here are your passwords, press ctrl + g to generate again !\r\n\r\n";
+
+    int center_message = (E.screencols - strlen(message)) / 2;
+    char *message_spaces = (char *) malloc(sizeof(char) * center_message + 1);
+    message_spaces[center_message] = '\0';
+    memset(message_spaces, ' ', center_message);
+
+    char *message_formatted = format_str(message, &message_spaces, 1, '~');
+    abAppend(ab, message_formatted, strlen(message_formatted));
+
+
+    // On calcule le décalage pour centrer les mdp
+    int nb_spaces = (E.screencols - PasswordParams.nb_chars) / 2;
+
+    // On alloue la mémoire pour les espaces
+    char *spaces = (char *) malloc(sizeof(char) * nb_spaces + 1);
+    spaces[nb_spaces] = '\0';
+    memset(spaces, ' ', nb_spaces);
+
+    // On affiche les mdp
+    for (int i = 0; i < PasswordParams.nb_passwd; i++)
+    {
+        char *args[3] = {spaces, passwords[i], "\r\n"};
+        char *tmp = format_str("~~~", args, 3, '~');
+        abAppend(ab, tmp, strlen(tmp));
+        free(tmp);
+    }
+
+    // On affiche la status bar
+    char *pluriel = "s ";
+    if (PasswordParams.nb_passwd == 1) pluriel = " ";
+
+    char *time_passed[3];
+    sprintf(time_passed, "%.3f", exec_time);
+
+    char *sb_args[4] = {int2str(PasswordParams.nb_passwd), pluriel, int2str(PasswordParams.nb_chars), time_passed};
+
+    SB_MIDDLE = format_str("~ password~of ~ characters generated in ~s", sb_args, 4, '~');
+    print_statusbar(ab);
+
+    // On libère la mémoire allouée dans cette fonction
+    free(message_spaces);
+    free(spaces);
+
+    // La mémoire allouée par format_str()
+    free(message_formatted);
+    free(SB_MIDDLE);
+
+    // La mémoire allouée par int2str()
     free(sb_args[0]);
     free(sb_args[2]);
 }
