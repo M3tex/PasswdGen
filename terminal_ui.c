@@ -31,10 +31,8 @@ Ce fichier contiendra toutes les fonctions nécessaire
 
 struct editorConfig 
 {
-    bool main_menu;
-    bool passwd_menu;
-    bool passphrase_menu;
-    bool strenght_menu;
+    bool lock;
+    char *menu;
 
     int screenrows;
     int screencols;
@@ -61,6 +59,7 @@ struct passwd_menu_data
 
     int selected_param;
     bool generate;
+    clock_t exec_time;
 };
 struct passwd_menu_data PasswordParams;
 
@@ -220,10 +219,8 @@ void update_terminal()
 void set_main_menu()
 {
     // On réinitialise les variables
-    E.main_menu = true;
-    E.passwd_menu = false;
-    E.passphrase_menu = false;
-    E.strenght_menu = false;
+    E.menu = "main";
+    E.lock = false;
 
     // La status bar est réinitialisée
     SB_MIDDLE = "Password Generator v0.1";
@@ -235,34 +232,30 @@ void set_main_menu()
 void set_passwd_menu()
 {
     // On réinitialise les variables
-    E.main_menu = false;
-    E.passwd_menu = true;
-    E.passphrase_menu = false;
-    E.strenght_menu = false;
+    E.menu = "passwd";
+    E.lock = false;
 
     // On initialise avec les paramètres par défaut
     PasswordParams.nb_passwd = 5;
     PasswordParams.nb_chars = 12;
     PasswordParams.special_chars = "!@#$%^&*()_+-=[]{}|;':,./<>?";
-    PasswordParams.generate = false;
+    PasswordParams.selected_param = 0;
 }
 
 
 void set_passphrase_menu()
 {
-    E.main_menu = false;
-    E.passwd_menu = false;
-    E.passphrase_menu = true;
-    E.strenght_menu = false;
+
+    E.menu = "passphrase";
+    E.lock = false;
 }
 
 
 void set_strenght_menu()
 {
-    E.main_menu = false;
-    E.passwd_menu = false;
-    E.passphrase_menu = false;
-    E.strenght_menu = true;
+
+    E.menu = "strenght";
+    E.lock = false;
 }
 
 
@@ -331,9 +324,15 @@ void editorProcessKeypress()
         clear_input();
         break;
     case CTRL_KEY('g'):
-        if (E.passwd_menu)
+        if (E.menu == "passwd")
         {
-            if (E.passwd_menu) PasswordParams.generate = true;
+            E.menu = "passwd_result";
+            editorRefreshScreen();
+            break;
+        }
+        else if (E.menu == "passwd_result")
+        {
+            E.lock = false;
             editorRefreshScreen();
             break;
         }
@@ -343,21 +342,21 @@ void editorProcessKeypress()
         set_main_menu();
         break;
     case 'Z':
-        if (E.passwd_menu && PasswordParams.selected_param > 0 && !PasswordParams.generate)
+        if (E.menu == "passwd" && PasswordParams.selected_param > 0 && !(E.menu == "passwd_result"))
         {
             PasswordParams.selected_param--;
             editorRefreshScreen();
         }
         break;
     case 'S':
-        if (E.passwd_menu && PasswordParams.selected_param < 2 && !PasswordParams.generate)
+        if (E.menu == "passwd" && PasswordParams.selected_param < 2 && !(E.menu == "passwd_result"))
         {
             PasswordParams.selected_param++;
             editorRefreshScreen();
         }
         break;
     case 'Q':
-        if (E.passwd_menu && !PasswordParams.generate)
+        if (E.menu == "passwd" && !(E.menu == "passwd_result"))
         {
             if (PasswordParams.selected_param == 0 && PasswordParams.nb_passwd > 1)
             {
@@ -371,7 +370,7 @@ void editorProcessKeypress()
         }
         break;
     case 'D':
-        if (E.passwd_menu && !PasswordParams.generate)
+        if (E.menu == "passwd" && !(E.menu == "passwd_result"))
         {
             if (PasswordParams.selected_param == 0)
             {
@@ -413,28 +412,23 @@ void editorRefreshScreen()
 
     // On affiche la fenêtre actuelle
     // TODO: Utiliser un enum pour définir la fenêtre actuelle
-    if (E.main_menu)
+    if (E.menu == "main")
     {
         print_main_menu(&ab);
     }
-    else if (E.passwd_menu)
+    else if (E.menu == "passwd")
     {
-        if (PasswordParams.generate)
-        {
-            print_passwd_result(&ab);
-        }
-        else
-        {
-            print_passwd_menu(&ab);
-            
-        }
-
+        print_passwd_menu(&ab);
     }
-    else if (E.passphrase_menu)
+    else if (E.menu == "passwd_result")
+    {
+        print_passwd_result(&ab);
+    }
+    else if (E.menu == "passphrase")
     {
         // TODO: Fonction pour afficher le menu de génération de phrase de passe
     }
-    else if (E.strenght_menu)
+    else if (E.menu == "strenght")
     {
         // TODO: Fonction pour afficher le menu de test de force du mot de passe
     }
@@ -628,11 +622,18 @@ void print_passwd_result(struct abuf *ab)
     // On saute une ligne
     abAppend(ab, "\r\n", strlen("\r\n"));
 
-    // On génère les mdp
-    char *passwords[PasswordParams.nb_passwd];
-    clock_t start = clock();
-    generate_passwd(PasswordParams.nb_passwd, PasswordParams.nb_chars, passwords, PasswordParams.special_chars);
-    clock_t exec_time = clock() - start;
+
+    // Si on affiche pour la première fois
+    if (!E.lock)
+    {
+        // On génère les mdp
+        PasswordParams.passwords = malloc(sizeof(char *) * PasswordParams.nb_passwd);
+        clock_t start = clock();
+        generate_passwd(PasswordParams.nb_passwd, PasswordParams.nb_chars, PasswordParams.passwords, PasswordParams.special_chars);
+        PasswordParams.exec_time = clock() - start;
+        E.lock = true;
+    }
+    
 
     // Si pas assez de place pour afficher tous les mdp, on les met dans un fichier
     if (PasswordParams.nb_passwd > 8 + 3 + 1 + 5 || PasswordParams.nb_chars > E.screencols - 2)
@@ -664,7 +665,7 @@ void print_passwd_result(struct abuf *ab)
     // On affiche les mdp
     for (int i = 0; i < PasswordParams.nb_passwd; i++)
     {
-        char *args[3] = {spaces, passwords[i], "\r\n"};
+        char *args[3] = {spaces, PasswordParams.passwords[i], "\r\n"};
         char *tmp = format_str("~~~", args, 3, '~');
         abAppend(ab, tmp, strlen(tmp));
         free(tmp);
@@ -675,7 +676,7 @@ void print_passwd_result(struct abuf *ab)
     if (PasswordParams.nb_passwd == 1) pluriel = " ";
 
     char *time_passed[3];
-    sprintf(time_passed, "%.3f", exec_time);
+    sprintf(time_passed, "%.3f", PasswordParams.exec_time);
 
     char *sb_args[4] = {int2str(PasswordParams.nb_passwd), pluriel, int2str(PasswordParams.nb_chars), time_passed};
 
