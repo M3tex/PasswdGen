@@ -59,7 +59,7 @@ struct passwd_menu_data
 
     int selected_param;
     bool generate;
-    clock_t exec_time;
+    double exec_time;
 };
 struct passwd_menu_data PasswordParams;
 
@@ -141,7 +141,7 @@ void set_passwd_menu();
 void set_passphrase_menu();
 void set_strenght_menu();
 void print_passwd_result(struct abuf *ab);
-
+void free_passwd_buffer();
 
 
 /*** Fonctions ***/
@@ -221,6 +221,7 @@ void set_main_menu()
     // On réinitialise les variables
     E.menu = "main";
     E.lock = false;
+    PasswordParams.generate = false;
 
     // La status bar est réinitialisée
     SB_MIDDLE = "Password Generator v0.1";
@@ -314,6 +315,7 @@ void editorProcessKeypress()
     switch (c)
     {
     case CTRL_KEY('q'):
+        free_passwd_buffer();
         clear_screen();
         // On réaffiche le curseur
         printf("\x1b[?25h");
@@ -423,6 +425,7 @@ void editorRefreshScreen()
     else if (E.menu == "passwd_result")
     {
         print_passwd_result(&ab);
+        PasswordParams.generate = true;
     }
     else if (E.menu == "passphrase")
     {
@@ -626,11 +629,12 @@ void print_passwd_result(struct abuf *ab)
     // Si on affiche pour la première fois
     if (!E.lock)
     {
+        free_passwd_buffer();
         // On génère les mdp
         PasswordParams.passwords = malloc(sizeof(char *) * PasswordParams.nb_passwd);
         clock_t start = clock();
         generate_passwd(PasswordParams.nb_passwd, PasswordParams.nb_chars, PasswordParams.passwords, PasswordParams.special_chars);
-        PasswordParams.exec_time = clock() - start;
+        PasswordParams.exec_time = (double) (clock() - start) / CLOCKS_PER_SEC;
         E.lock = true;
     }
     
@@ -675,7 +679,8 @@ void print_passwd_result(struct abuf *ab)
     char *pluriel = "s ";
     if (PasswordParams.nb_passwd == 1) pluriel = " ";
 
-    char *time_passed[3];
+    char *time_passed = (char *) malloc(sizeof(char) * 6);
+    time_passed[5] = '\0';
     sprintf(time_passed, "%.3f", PasswordParams.exec_time);
 
     char *sb_args[4] = {int2str(PasswordParams.nb_passwd), pluriel, int2str(PasswordParams.nb_chars), time_passed};
@@ -686,6 +691,7 @@ void print_passwd_result(struct abuf *ab)
     // On libère la mémoire allouée dans cette fonction
     free(message_spaces);
     free(spaces);
+    free(time_passed);
 
     // La mémoire allouée par format_str()
     free(message_formatted);
@@ -749,4 +755,17 @@ char editorReadKey()
     }
 
     return c;
+}
+
+
+void free_passwd_buffer()
+{
+    if (PasswordParams.passwords != NULL)
+    {
+        for (int i = 0; i < PasswordParams.nb_passwd; i++)
+        {
+            free(PasswordParams.passwords[i]);
+        }
+        free(PasswordParams.passwords);
+    }
 }
