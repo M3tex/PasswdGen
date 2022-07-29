@@ -236,7 +236,7 @@ void generate_passwd(int nb, int len, char *passwd[], char *special_chars)
     char *alphabets[4] = {g_alphabet, g_alphabet_upper, g_alphabet_numeric, special_chars};
 
     int nb_alphabets = 4;
-    if (special_chars == "") nb_alphabets = 3;
+    if (strcmp(special_chars, "None") == 0) nb_alphabets--;
     
     for (int i = 0; i < nb; i++)
     {
@@ -244,8 +244,7 @@ void generate_passwd(int nb, int len, char *passwd[], char *special_chars)
         passwd[i] = (char *) malloc(sizeof(char) * (len + 1));
         if (passwd[i] == NULL)
         {
-            printf("Erreur d'allocation mémoire.\n");
-            return;
+            die("Erreur d'allocation mémoire.\n");
         }
 
         passwd[i][len] = '\0';
