@@ -58,6 +58,7 @@ struct passwd_menu_data
     char **passwords;
 
     int selected_param;
+    int special_idx;
     bool generate;
     double exec_time;
 };
@@ -108,7 +109,7 @@ char *PASSWD_EXPLAIN3 = "~Once done, simply press ctrl + g !\r\n\r\n";
 
 char *PASSWD_PARAM1 = "~~Number of passwords: ~\r\n";
 char *PASSWD_PARAM2 = "~~Number of characters: ~\r\n";
-char *PASSWD_PARAM3 = "~~Special characters (press ctrl + ! to modify): ~\r\n";
+char *PASSWD_PARAM3 = "~~Special characters: ~\r\n";
 
 
 // Passphrase Menu
@@ -239,8 +240,8 @@ void set_passwd_menu()
     // On initialise avec les paramètres par défaut
     PasswordParams.nb_passwd = 5;
     PasswordParams.nb_chars = 12;
-    PasswordParams.special_chars = "!@#$%^&*()_+-=[]{}|;':,./<>?";
     PasswordParams.selected_param = 0;
+    PasswordParams.special_idx = 0;
 }
 
 
@@ -368,6 +369,10 @@ void editorProcessKeypress()
             {
                 PasswordParams.nb_chars--;
             }
+            else if (PasswordParams.selected_param == 2 && PasswordParams.special_idx > 0)
+            {
+                PasswordParams.special_idx--;
+            }
             editorRefreshScreen();
         }
         break;
@@ -381,6 +386,10 @@ void editorProcessKeypress()
             else if (PasswordParams.selected_param == 1)
             {
                 PasswordParams.nb_chars++;
+            }
+            else if (PasswordParams.selected_param == 2 && PasswordParams.special_idx < 3)
+            {
+                PasswordParams.special_idx++;
             }
             editorRefreshScreen();
         }
@@ -534,6 +543,10 @@ void print_main_menu(struct abuf *ab)
 
 void print_passwd_menu(struct abuf *ab)
 {
+
+    char *special_chars[3] = {"!@#$%^&*()_+-=[]{}|;':,./<>?", "@&$!#?-", "None"};
+    PasswordParams.special_chars = special_chars[PasswordParams.special_idx];
+
     // On affiche le titre
     print_title(ab);
 
